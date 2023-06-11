@@ -12,7 +12,7 @@ from socketserver import (
 
 
 class DaytimeUDPHandler(BaseRequestHandler):
-    socket_type = 'udp'
+    protocol = 'udp'
 
     class cache:
         second = 0
@@ -26,7 +26,7 @@ class DaytimeUDPHandler(BaseRequestHandler):
         syslog.syslog(
             syslog.LOG_INFO,
             'replied {} client {}:{}'.format(
-                self.socket_type,
+                self.protocol,
                 *self.client_address
             )
         )
@@ -41,7 +41,7 @@ class DaytimeUDPHandler(BaseRequestHandler):
 
 
 class DaytimeTCPHandler(DaytimeUDPHandler):
-    socket_type = 'tcp'
+    protocol = 'tcp'
 
     def handle(self):
         self.request.send(self.daytime())
