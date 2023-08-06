@@ -13,12 +13,13 @@ def main():
         error('Server address is need')
         sys.exit(2)
 
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    client_socket.settimeout(1.0)
     server_address = sys.argv[1]
+    family = socket.AF_INET6 if ':' in server_address else socket.AF_INET
+    client_socket = socket.socket(family, socket.SOCK_DGRAM)
+    client_socket.settimeout(1.0)
 
     try:
-        client_socket.sendto(b'What time is it now?', (server_address, 13))
+        client_socket.sendto(b'daytime.py', (server_address, 13))
         data, _ = client_socket.recvfrom(1024)
         date = data.decode().strip()
         print(date)

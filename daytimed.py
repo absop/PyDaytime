@@ -1,8 +1,9 @@
 #!/usr/bin/python
 
-import time
-import syslog
 import os
+import socket
+import syslog
+import time
 
 from socketserver import (
     BaseRequestHandler,
@@ -19,15 +20,18 @@ class DaytimeUDPHandler(BaseRequestHandler):
         daytime = b''
 
     def handle(self):
-        _, sock = self.request
+        data, sock = self.request
         sock.sendto(self.daytime(), self.client_address)
+        self.client_msg = data
 
     def finish(self) -> None:
         syslog.syslog(
             syslog.LOG_INFO,
-            'replied {} client {}:{}'.format(
+            '{} {}:{} send {}, recv {}'.format(
                 self.protocol,
-                *self.client_address
+                *self.client_address[:2],
+                self.cache.daytime,
+                self.client_msg
             )
         )
 
@@ -45,13 +49,26 @@ class DaytimeTCPHandler(DaytimeUDPHandler):
 
     def handle(self):
         self.request.send(self.daytime())
+        self.request.settimeout(0)
+        try:
+            self.client_msg = self.request.recv(1024)
+        except:
+            self.client_msg = b''
+
+
+class IPv6TCPServer(TCPServer):
+    address_family = socket.AF_INET6
+
+
+class IPv6UDPServer(UDPServer):
+    address_family = socket.AF_INET6
 
 
 if __name__ == '__main__':
     pid = os.fork()
     if pid == 0:
-        server = TCPServer(('', 13), DaytimeTCPHandler)
+        server = IPv6TCPServer(('', 13), DaytimeTCPHandler)
         server.serve_forever()
     else:
-        server = UDPServer(('', 13), DaytimeUDPHandler)
+        server = IPv6UDPServer(('', 13), DaytimeUDPHandler)
         server.serve_forever()
